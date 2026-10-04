@@ -1,0 +1,47 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: oauth-jboss-backend
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Signing keys are fetched from <issuer>/.well-known/openid-configuration -> jwks_uri
+          # on the first request, and the "iss" claim must equal this value.
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/learning}
+          # The "aud" claim must contain this value (added by the audience mapper in Keycloak).
+          audiences: oauth-jboss-backend
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    info:
+      access: read-only
+  info:
+    git:
+      mode: full
+    build:
+      enabled: true
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: OAuth 2.0 resource server — accepts only Keycloak-issued JWTs (iss, aud, api-user role)
+    version: 0.0.1-SNAPSHOT
+    issuer-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}
+    audience: ${spring.security.oauth2.resourceserver.jwt.audiences}
+
+logging:
+  level:
+    org.springframework.security: INFO

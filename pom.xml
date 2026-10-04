@@ -19,7 +19,7 @@
     <description>OAuth 2.0 / OIDC demo — Keycloak-protected Spring Boot resource server called by a Node PKCE client</description>
 
     <modules>
-        <module>oauth-api</module>
+        <module>oauth-jboss-backend</module>
     </modules>
 
     <build>
