@@ -1,0 +1,20 @@
+{
+  "name": "node-pkce-app",
+  "version": "1.0.0",
+  "description": "Single page Node.js app doing OAuth 2.0 Authorization Code + PKCE login against Keycloak",
+  "main": "server.js",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --env-file-if-exists=.env --watch server.js"
+  },
+  "engines": {
+    "node": ">=22.9"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "jose": "^5.9.6"
+  }
+}

@@ -1,0 +1,19 @@
+name: learning-oauth
+
+services:
+  keycloak:
+    # The legacy "jboss/keycloak" image (WildFly based) is deprecated and stopped at 16.1.1.
+    # quay.io/keycloak/keycloak is its official successor (Quarkus based).
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: learning-oauth-keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      # Every *.json file here is imported on startup (skipped if the realm already exists).
+      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
