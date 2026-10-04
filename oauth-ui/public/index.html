@@ -54,7 +54,7 @@
         <li>Server checks <code>state</code>, then POSTs <code>code</code> + <code>code_verifier</code> to the token endpoint.</li>
         <li>Keycloak hashes the verifier, compares with the stored challenge, and issues tokens.</li>
         <li>Server verifies the ID token signature (JWKS), issuer, audience and nonce.</li>
-        <li>The page asks this server to call the Spring Boot <code>oauth-jboss-backend</code>; the server sends the access token as <code>Authorization: Bearer …</code>.</li>
+        <li>The page asks this server to call the Spring Boot <code>oauth-keycloak</code>; the server sends the access token as <code>Authorization: Bearer …</code>.</li>
         <li>Spring Security validates the JWT (signature, expiry, issuer, audience, role) and the API returns its result.</li>
       </ol>
     </div>
@@ -64,14 +64,14 @@
     <div class="card">
       <h2 id="welcome"></h2>
       <div class="row">
-        <button class="btn secondary" id="apiBtn">Call oauth-jboss-backend again</button>
+        <button class="btn secondary" id="apiBtn">Call oauth-keycloak again</button>
         <a class="btn" href="/logout">Logout</a>
       </div>
     </div>
     <div class="card" id="apiCard">
-      <h2>oauth-jboss-backend response <span id="apiStatus" class="badge"></span></h2>
+      <h2>oauth-keycloak response <span id="apiStatus" class="badge"></span></h2>
       <p id="apiMessage" class="api-message"></p>
-      <pre id="api">Calling oauth-jboss-backend…</pre>
+      <pre id="api">Calling oauth-keycloak…</pre>
     </div>
     <div class="card"><h2>PKCE values used for this login</h2><dl id="pkce"></dl></div>
     <div class="card"><h2>Token response (metadata)</h2><pre id="token"></pre></div>
@@ -104,7 +104,7 @@
 
   // Invoked automatically once login is validated, and again from the button.
   async function callApi() {
-    $('api').textContent = 'Calling oauth-jboss-backend…';
+    $('api').textContent = 'Calling oauth-keycloak…';
     const res = await fetch('/api/greeting');
     const data = await res.json();
     const ok = res.ok;

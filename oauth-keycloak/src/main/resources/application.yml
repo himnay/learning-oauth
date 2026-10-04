@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: oauth-jboss-backend
+    name: oauth-keycloak
   security:
     oauth2:
       resourceserver:
@@ -12,7 +12,7 @@ spring:
           # on the first request, and the "iss" claim must equal this value.
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/learning}
           # The "aud" claim must contain this value (added by the audience mapper in Keycloak).
-          audiences: oauth-jboss-backend
+          audiences: oauth-keycloak
 
 management:
   endpoints:

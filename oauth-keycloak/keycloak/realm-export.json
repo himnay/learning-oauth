@@ -7,7 +7,7 @@
   "loginWithEmailAllowed": true,
   "roles": {
     "realm": [
-      { "name": "api-user", "description": "Allowed to call the oauth-jboss-backend REST API" }
+      { "name": "api-user", "description": "Allowed to call the oauth-keycloak REST API" }
     ]
   },
   "clients": [
@@ -31,11 +31,11 @@
       },
       "protocolMappers": [
         {
-          "name": "oauth-jboss-backend-audience",
+          "name": "oauth-keycloak-audience",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-audience-mapper",
           "config": {
-            "included.custom.audience": "oauth-jboss-backend",
+            "included.custom.audience": "oauth-keycloak",
             "access.token.claim": "true",
             "id.token.claim": "false"
           }

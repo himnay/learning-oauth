@@ -19,7 +19,7 @@ public class GreetingController {
     public GreetingResponse greeting(JwtAuthenticationToken authentication) {
         Jwt jwt = authentication.getToken();
         return new GreetingResponse(
-                "Hello " + authentication.getName() + ", your token was validated by oauth-jboss-backend (Spring Security)",
+                "Hello " + authentication.getName() + ", your token was validated by oauth-keycloak (Spring Security)",
                 authentication.getName(),
                 jwt.getClaimAsString("email"),
                 jwt.getSubject(),

@@ -8,17 +8,17 @@
 4. 🚀 [Quick start](#quick-start)
 5. 🏗️ [Architecture and full flow](#architecture-and-full-flow)
     - 5.1 [Why the browser doesn't call the API directly](#why-the-browser-doesnt-call-the-api-directly)
-6. 🛡️ [Module 1: oauth-jboss-backend (`oauth-jboss-backend/`)](#module-1-oauth-jboss-backend-oauth-jboss-backend)
-    - 6.1 [Keycloak (`oauth-jboss-backend/keycloak/`)](#keycloak-oauth-jboss-backendkeycloak)
+6. 🛡️ [Module 1: oauth-keycloak (`oauth-keycloak/`)](#module-1-oauth-keycloak-oauth-keycloak)
+    - 6.1 [Keycloak (`oauth-keycloak/keycloak/`)](#keycloak-oauth-keycloakkeycloak)
     - 6.2 [Spring Boot resource server](#spring-boot-resource-server)
 7. 🟢 [Module 2: oauth-ui (`oauth-ui/`)](#module-2-oauth-ui-oauth-ui)
 8. 🔐 [How PKCE works](#how-pkce-works)
 9. 🔌 [Endpoints](#endpoints)
     - 9.1 [oauth-ui (http://localhost:4000)](#oauth-ui-httplocalhost4000)
-    - 9.2 [oauth-jboss-backend (http://localhost:8081)](#oauth-jboss-backend-httplocalhost8081)
+    - 9.2 [oauth-keycloak (http://localhost:8081)](#oauth-keycloak-httplocalhost8081)
 10. ⚙️ [Configuration](#configuration)
     - 10.1 [oauth-ui](#oauth-ui)
-    - 10.2 [oauth-jboss-backend](#oauth-jboss-backend)
+    - 10.2 [oauth-keycloak](#oauth-keycloak)
 11. 🧪 [Experiments to try](#experiments-to-try)
 12. 🩺 [Troubleshooting](#troubleshooting)
 13. 🏭 [Going to production](#going-to-production)
@@ -33,7 +33,7 @@ A hands-on project for learning **OAuth 2.0 Authorization Code flow with PKCE**,
 |---|---|---|
 | **Keycloak** | Authorization server / OpenID Provider: logs users in, issues tokens | Docker Compose, `quay.io/keycloak/keycloak:26.0` |
 | **`oauth-ui`** | Client (backend-for-frontend) + the single page UI | Node.js, Express |
-| **`oauth-jboss-backend`** | Resource server: a REST API that only accepts valid Keycloak access tokens | Spring Boot 4.1, Spring Security 7 |
+| **`oauth-keycloak`** | Resource server: a REST API that only accepts valid Keycloak access tokens | Spring Boot 4.1, Spring Security 7 |
 
 The user logs in through Keycloak using PKCE. Once login is validated, the page calls the Spring Boot API through the Node server, which attaches the access token. Spring Security validates the token, and the page shows the API's response.
 
@@ -48,7 +48,7 @@ The OAuth client flow is written by hand (no OIDC client library) so every step 
 learning-oauth/
 ├── pom.xml                                     # Maven aggregator (parent: com.org.llm:super-pom)
 ├── mvnw, .mvn/                                 # Maven wrapper (run from the repo root)
-├── oauth-jboss-backend/                        # Module 1: Spring Boot REST API (resource server)
+├── oauth-keycloak/                             # Module 1: Spring Boot REST API (resource server)
 │   ├── keycloak/
 │   │   ├── docker-compose.yml                  # Keycloak on :8080
 │   │   └── realm-export.json                   # realm, client, roles, users (imported on startup)
@@ -83,7 +83,7 @@ learning-oauth/
 
 Maven is **not** required: the repo root ships the Maven wrapper (`./mvnw`). The root `pom.xml` is a multi-module aggregator whose parent is the shared `com.org.llm:super-pom` (must be in your local `~/.m2` or a reachable repository).
 
-Free ports: **8080** (Keycloak), **8081** (oauth-jboss-backend), **4000** (oauth-ui).
+Free ports: **8080** (Keycloak), **8081** (oauth-keycloak), **4000** (oauth-ui).
 
 <a id="quick-start"></a>
 ## <span style="color:hsl(56,80%,50%)">4. 🚀 Quick start</span>
@@ -92,12 +92,12 @@ Use three terminals, started in this order.
 
 ```bash
 # Terminal 1: Keycloak (first start pulls the image, ~30-60 s)
-cd oauth-jboss-backend/keycloak
+cd oauth-keycloak/keycloak
 docker compose up -d
 docker compose logs -f keycloak        # wait for "Listening on: http://0.0.0.0:8080", then Ctrl+C
 
 # Terminal 2: Spring Boot API on :8081 (from the repo root)
-./mvnw -pl oauth-jboss-backend spring-boot:run
+./mvnw -pl oauth-keycloak spring-boot:run
 
 # Terminal 3: Node app on :4000
 cd oauth-ui
@@ -112,9 +112,9 @@ Open **http://localhost:4000** and click **Login with Keycloak**.
 | `demo` | `demo` | yes | **200** with a greeting and the token details the API saw |
 | `noaccess` | `noaccess` | no | **403** `insufficient_scope` (logged in, but not allowed) |
 
-After login the page shows the **oauth-jboss-backend response** first (called automatically), then the PKCE values used, token metadata, the verified ID token claims and the decoded access token claims. **Call oauth-jboss-backend again** repeats the API call.
+After login the page shows the **oauth-keycloak response** first (called automatically), then the PKCE values used, token metadata, the verified ID token claims and the decoded access token claims. **Call oauth-keycloak again** repeats the API call.
 
-Stop everything: `Ctrl+C` in terminals 2 and 3, then `cd oauth-jboss-backend/keycloak && docker compose down`.
+Stop everything: `Ctrl+C` in terminals 2 and 3, then `cd oauth-keycloak/keycloak && docker compose down`.
 
 Run the API tests (no Keycloak needed):
 
@@ -139,7 +139,7 @@ Run the API tests (no Keycloak needed):
                                          │ Authorization: Bearer <access_token>                        │ JWKS (public keys),
                                          ▼                                                             │ fetched once & cached
                                 ┌──────────────────┐                                                   │
-                                │ oauth-jboss-backend :8081  │ ◄─────────────────────────────────────────────────┘
+                                │ oauth-keycloak :8081  │ ◄─────────────────────────────────────────────────┘
                                 │ (Spring Security │   verifies signature, exp, iss, aud, role
                                 │  resource server)│
                                 └──────────────────┘
@@ -153,10 +153,10 @@ Step by step:
 4. Node checks `state`, POSTs `code` + `code_verifier` to Keycloak's token endpoint and receives `access_token`, `id_token`, `refresh_token`.
 5. Node verifies the ID token (signature via JWKS, `iss`, `aud`, `exp`, `nonce`), regenerates the session, and redirects to `/`.
 6. **Login validated → the page calls `oauth-ui /api/greeting`.**
-7. Node refreshes the access token if it's about to expire, then calls `oauth-jboss-backend GET /api/greeting` with `Authorization: Bearer <access_token>`.
-8. **Spring Security** in `oauth-jboss-backend`:
+7. Node refreshes the access token if it's about to expire, then calls `oauth-keycloak GET /api/greeting` with `Authorization: Bearer <access_token>`.
+8. **Spring Security** in `oauth-keycloak`:
    - fetches Keycloak's public keys (first request only) and verifies the RS256 signature,
-   - checks `exp`/`nbf`, `iss == http://localhost:8080/realms/learning`, and that `aud` contains `oauth-jboss-backend`,
+   - checks `exp`/`nbf`, `iss == http://localhost:8080/realms/learning`, and that `aud` contains `oauth-keycloak`,
    - maps `realm_access.roles` to `ROLE_*` authorities and requires `ROLE_api-user`.
    - Failures produce **401** (bad/missing token) or **403** (valid token, missing role) with an RFC 6750 `WWW-Authenticate` header.
 9. The controller returns JSON. Node passes it, with the status, to the page, which displays it.
@@ -168,11 +168,11 @@ The tokens live only in the Node server's session (the **backend-for-frontend** 
 
 ---
 
-<a id="module-1-oauth-jboss-backend-oauth-jboss-backend"></a>
-## <span style="color:hsl(200,80%,58%)">6. 🛡️ Module 1: oauth-jboss-backend (`oauth-jboss-backend/`)</span>
+<a id="module-1-oauth-keycloak-oauth-keycloak"></a>
+## <span style="color:hsl(200,80%,58%)">6. 🛡️ Module 1: oauth-keycloak (`oauth-keycloak/`)</span>
 
-<a id="keycloak-oauth-jboss-backendkeycloak"></a>
-### <span style="color:hsl(20,80%,58%)">6.1 Keycloak (`oauth-jboss-backend/keycloak/`)</span>
+<a id="keycloak-oauth-keycloakkeycloak"></a>
+### <span style="color:hsl(20,80%,58%)">6.1 Keycloak (`oauth-keycloak/keycloak/`)</span>
 
 The authorization server that the API trusts. It's started by Docker Compose and configured entirely from `realm-export.json`.
 
@@ -200,13 +200,13 @@ The old **`jboss/keycloak`** image (WildFly/JBoss based) is **deprecated**. Its 
 | Item | Value | Why |
 |---|---|---|
 | Realm | `learning` | Isolated tenant |
-| Realm role | `api-user` | Required by `oauth-jboss-backend` to call `/api/greeting` |
+| Realm role | `api-user` | Required by `oauth-keycloak` to call `/api/greeting` |
 | Client | `node-pkce-app`, **public** (no secret) | The Node app. PKCE replaces the secret as proof of who started the flow |
 | Standard flow | on; implicit + password grant off | Only the secure flow is allowed |
 | `pkce.code.challenge.method` | `S256` | Keycloak **rejects** auth requests without an S256 challenge |
 | Redirect URI | `http://localhost:4000/callback` (exact) | Where codes may be sent |
 | Post-logout redirect URI | `http://localhost:4000/` | Where logout returns |
-| Protocol mapper `oauth-jboss-backend-audience` | adds `oauth-jboss-backend` to the access token's `aud` | The API only accepts tokens issued **for it** |
+| Protocol mapper `oauth-keycloak-audience` | adds `oauth-keycloak` to the access token's `aud` | The API only accepts tokens issued **for it** |
 | Users | `demo`/`demo` (has `api-user`), `noaccess`/`noaccess` (doesn't) | To see 200 vs 403 |
 
 #### Useful Keycloak URLs
@@ -230,7 +230,7 @@ A stateless REST API on port **8081** with one endpoint, `GET /api/greeting`. It
 ```yaml
 spring.security.oauth2.resourceserver.jwt:
   issuer-uri: http://localhost:8080/realms/learning   # keys discovered from here; "iss" must match
-  audiences: oauth-jboss-backend                                # "aud" must contain this
+  audiences: oauth-keycloak                                # "aud" must contain this
 ```
 
 Spring Boot reads `issuer-uri`, lazily downloads `/.well-known/openid-configuration` → `jwks_uri` on the first request, caches the public keys, and builds a `JwtDecoder` that validates signature, timestamps, issuer and audience. Keycloak doesn't need to be up when the API starts.
@@ -261,12 +261,12 @@ The converter maps those to `ROLE_api-user`, `ROLE_offline_access` and so on, so
 
 ```json
 {
-  "message": "Hello demo, your token was validated by oauth-jboss-backend (Spring Security)",
+  "message": "Hello demo, your token was validated by oauth-keycloak (Spring Security)",
   "username": "demo",
   "email": "demo@example.com",
   "subject": "31365d03-…",
   "authorities": ["FACTOR_BEARER", "ROLE_api-user", "…", "SCOPE_email", "SCOPE_openid", "SCOPE_profile"],
-  "audience": ["oauth-jboss-backend", "account"],
+  "audience": ["oauth-keycloak", "account"],
   "tokenIssuedAt": "2026-10-04T07:09:14Z",
   "tokenExpiresAt": "2026-10-04T07:14:14Z",
   "serverTime": "2026-10-04T07:09:14.802Z"
@@ -300,7 +300,7 @@ What's in [`server.js`](oauth-ui/server.js):
 4. **`GET /callback`**: checks `error` and `state`, exchanges `code` + `code_verifier` at the token endpoint (no client secret), verifies the ID token with `jose.jwtVerify`, checks `nonce`, **regenerates the session** (prevents session fixation), and stores tokens.
 5. **`GET /api/me`**: login state + claims for the page.
 6. **`getAccessToken`**: if the access token expires within 10 s, uses the `refresh_token` grant to get a new one (Keycloak access tokens last 5 minutes by default).
-7. **`GET /api/greeting`**: calls `oauth-jboss-backend` with `Authorization: Bearer <access_token>` and returns `{ request, status, wwwAuthenticate, body }` so the page can show both successes and Spring Security's error details.
+7. **`GET /api/greeting`**: calls `oauth-keycloak` with `Authorization: Bearer <access_token>` and returns `{ request, status, wwwAuthenticate, body }` so the page can show both successes and Spring Security's error details.
 8. **`GET /logout`**: destroys the session and redirects to Keycloak's `end_session_endpoint` (RP-initiated logout) so the SSO session ends too.
 
 [`public/index.html`](oauth-ui/public/index.html) loads `/api/me`. If logged in, it renders the claims and **immediately calls `/api/greeting`**, showing the status badge, message and full response.
@@ -338,15 +338,15 @@ At the token endpoint Keycloak computes `BASE64URL(SHA256(code_verifier))` and c
 | GET | `/login` | Starts Authorization Code + PKCE |
 | GET | `/callback` | Redirect URI; exchanges code + verifier for tokens |
 | GET | `/api/me` | `{ authenticated, user, accessTokenClaims, token, pkce }` |
-| GET | `/api/greeting` | Calls oauth-jboss-backend with the session's access token; returns `{ request, status, wwwAuthenticate, body }` |
+| GET | `/api/greeting` | Calls oauth-keycloak with the session's access token; returns `{ request, status, wwwAuthenticate, body }` |
 | GET | `/logout` | Clears session and logs out of Keycloak |
 
-<a id="oauth-jboss-backend-httplocalhost8081"></a>
-### <span style="color:hsl(80,80%,50%)">9.2 oauth-jboss-backend (http://localhost:8081)</span>
+<a id="oauth-keycloak-httplocalhost8081"></a>
+### <span style="color:hsl(80,80%,50%)">9.2 oauth-keycloak (http://localhost:8081)</span>
 
 | Method | Path | Auth | Responses |
 |---|---|---|---|
-| GET | `/api/greeting` | `Authorization: Bearer <Keycloak access token>` with `aud` ∋ `oauth-jboss-backend` and realm role `api-user` | `200` greeting JSON · `401` missing/invalid/expired token · `403` valid token without `api-user` |
+| GET | `/api/greeting` | `Authorization: Bearer <Keycloak access token>` with `aud` ∋ `oauth-keycloak` and realm role `api-user` | `200` greeting JSON · `401` missing/invalid/expired token · `403` valid token without `api-user` |
 | GET | `/actuator/health` | none | `200` `{"status":"UP"}` |
 | GET | `/actuator/info` | none | `200` app name/description/version, issuer, audience, git commit, Java, OS |
 
@@ -368,12 +368,12 @@ Works with no configuration. To override, copy `oauth-ui/.env.example` to `oauth
 | `KEYCLOAK_REALM` | `learning` | Realm |
 | `KEYCLOAK_CLIENT_ID` | `node-pkce-app` | Client ID |
 | `SESSION_SECRET` | `dev-only-secret` | Signs the session cookie |
-| `API_URL` | `http://localhost:8081` | Base URL of oauth-jboss-backend |
+| `API_URL` | `http://localhost:8081` | Base URL of oauth-keycloak |
 
-> If you change the Node port/URL, update `redirectUris`, `webOrigins`, `rootUrl` and `post.logout.redirect.uris` in `oauth-jboss-backend/keycloak/realm-export.json`, then recreate Keycloak.
+> If you change the Node port/URL, update `redirectUris`, `webOrigins`, `rootUrl` and `post.logout.redirect.uris` in `oauth-keycloak/keycloak/realm-export.json`, then recreate Keycloak.
 
-<a id="oauth-jboss-backend"></a>
-### <span style="color:hsl(80,80%,50%)">10.2 oauth-jboss-backend</span>
+<a id="oauth-keycloak"></a>
+### <span style="color:hsl(80,80%,50%)">10.2 oauth-keycloak</span>
 
 Environment variables (or edit `application.yml`):
 
@@ -382,7 +382,7 @@ Environment variables (or edit `application.yml`):
 | `PORT` | `8081` | API port |
 | `KEYCLOAK_ISSUER_URI` | `http://localhost:8080/realms/learning` | Must equal the `iss` claim in tokens, character for character |
 
-Example: `PORT=9090 ./mvnw -pl oauth-jboss-backend spring-boot:run` (then set `API_URL=http://localhost:9090` for oauth-ui).
+Example: `PORT=9090 ./mvnw -pl oauth-keycloak spring-boot:run` (then set `API_URL=http://localhost:9090` for oauth-ui).
 
 ---
 
@@ -401,7 +401,7 @@ Example: `PORT=9090 ./mvnw -pl oauth-jboss-backend spring-boot:run` (then set `A
    curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/greeting | jq
    ```
    Wait 5 minutes and try again: `401 … Jwt expired at …`.
-4. **Audience check.** In the Keycloak admin console remove the `oauth-jboss-backend-audience` mapper (Clients → node-pkce-app → Client scopes → node-pkce-app-dedicated), log in again: the API returns 401 because `aud` no longer contains `oauth-jboss-backend`.
+4. **Audience check.** In the Keycloak admin console remove the `oauth-keycloak-audience` mapper (Clients → node-pkce-app → Client scopes → node-pkce-app-dedicated), log in again: the API returns 401 because `aud` no longer contains `oauth-keycloak`.
 5. **Grant the role.** Admin console → Users → `noaccess` → Role mapping → assign `api-user`. Log out and in again (roles are baked into the token at issue time): 200.
 6. **Tamper with a token.** Change one character in the payload of a real token and call the API: signature verification fails → 401.
 7. **See PKCE enforcement.** Open this URL (no `code_challenge`):
@@ -410,7 +410,7 @@ Example: `PORT=9090 ./mvnw -pl oauth-jboss-backend spring-boot:run` (then set `A
    ```
    Keycloak answers `error=invalid_request&error_description=Missing parameter: code_challenge_method`.
 8. **Wrong verifier.** In `/callback`, replace `pending.codeVerifier` with `'x'.repeat(43)` and log in: `PKCE verification failed: Code mismatch`.
-9. **Token refresh.** Stay on the page for over 5 minutes, then click **Call oauth-jboss-backend again**. Node logs `[refresh] access token refreshed` and the API still returns 200 with a new `tokenExpiresAt`.
+9. **Token refresh.** Stay on the page for over 5 minutes, then click **Call oauth-keycloak again**. Node logs `[refresh] access token refreshed` and the API still returns 200 with a new `tokenExpiresAt`.
 10. **Decode tokens.** Paste a token into https://jwt.io, or `echo '<token>' | cut -d. -f2 | base64 -d 2>/dev/null`.
 
 ---
@@ -420,7 +420,7 @@ Example: `PORT=9090 ./mvnw -pl oauth-jboss-backend spring-boot:run` (then set `A
 
 | Symptom | Cause / fix |
 |---|---|
-| Page shows `oauth-jboss-backend not reachable at http://localhost:8081` (502) | API not running. Start it from the repo root: `./mvnw -pl oauth-jboss-backend spring-boot:run`. |
+| Page shows `oauth-keycloak not reachable at http://localhost:8081` (502) | API not running. Start it from the repo root: `./mvnw -pl oauth-keycloak spring-boot:run`. |
 | API returns 401 `The iss claim is not valid` | `KEYCLOAK_ISSUER_URI` doesn't exactly match the token's `iss` (e.g. `127.0.0.1` vs `localhost`, or running the API in Docker and using `keycloak:8080`). Use the same hostname the browser uses. |
 | API returns 401 `The aud claim is not valid` | Audience mapper missing. Recreate Keycloak so the realm re-imports. |
 | API returns 403 for `demo` | Realm import didn't assign `api-user`. Check Users → demo → Role mapping, then re-login. |
@@ -441,7 +441,7 @@ Example: `PORT=9090 ./mvnw -pl oauth-jboss-backend spring-boot:run` (then set `A
 
 - **Keycloak:** `start` (not `start-dev`), PostgreSQL, HTTPS, `KC_HOSTNAME`, strong admin password.
 - **oauth-ui:** HTTPS + `cookie.secure: true`, persistent session store (Redis/DB), strong `SESSION_SECRET`, don't expose PKCE values or claims to the page, consider [`openid-client`](https://github.com/panva/openid-client). Optionally make the client confidential (client secret) and keep PKCE.
-- **oauth-jboss-backend:** keep issuer + audience validation; prefer fine-grained authorities (roles or scopes per operation); add actuator health checks; run behind TLS; consider client roles (`resource_access.<client>.roles`) instead of realm roles for per-API permissions.
+- **oauth-keycloak:** keep issuer + audience validation; prefer fine-grained authorities (roles or scopes per operation); add actuator health checks; run behind TLS; consider client roles (`resource_access.<client>.roles`) instead of realm roles for per-API permissions.
 
 ---
 

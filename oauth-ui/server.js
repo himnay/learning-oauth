@@ -168,7 +168,7 @@ async function getAccessToken(req) {
   return req.session.tokens.access_token;
 }
 
-// Calls the Spring Boot oauth-jboss-backend with the user's access token as a Bearer token.
+// Calls the Spring Boot oauth-keycloak with the user's access token as a Bearer token.
 // The browser never sees the token: it only talks to this server (backend-for-frontend).
 app.get('/api/greeting', async (req, res, next) => {
   try {
@@ -181,7 +181,7 @@ app.get('/api/greeting', async (req, res, next) => {
     try {
       apiRes = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
     } catch {
-      return res.status(502).json({ error: `oauth-jboss-backend not reachable at ${config.apiUrl} (is it running?)` });
+      return res.status(502).json({ error: `oauth-keycloak not reachable at ${config.apiUrl} (is it running?)` });
     }
     const text = await apiRes.text();
     res.status(apiRes.status).json({

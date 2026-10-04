@@ -45,7 +45,7 @@ class GreetingControllerTest {
                                 .claim("email", "demo@example.com")
                                 .claim("scope", "openid profile")
                                 .claim("realm_access", Map.of("roles", List.of("api-user")))
-                                .audience(List.of("oauth-jboss-backend")))
+                                .audience(List.of("oauth-keycloak")))
                         .authorities(new KeycloakRealmRoleConverter())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("demo"))

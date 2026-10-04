@@ -10,8 +10,8 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>oauth-jboss-backend</artifactId>
-    <name>oauth-jboss-backend</name>
+    <artifactId>oauth-keycloak</artifactId>
+    <name>oauth-keycloak</name>
     <description>Spring Boot OAuth 2.0 resource server protected by Keycloak-issued JWTs</description>
 
     <dependencies>
