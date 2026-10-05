@@ -55,6 +55,7 @@ flowchart LR
 | Node.js | **22.9+** (`--env-file-if-exists` flag) | `node -v` |
 | npm | comes with Node | `npm -v` |
 | Docker + Docker Compose v2 | recent (for Keycloak) | `docker compose version` |
+| Red Hat registry login | for the Red Hat build of Keycloak image | `docker login registry.redhat.io` |
 | Java (JDK) | **27** (for oauth-keycloak) | `java -version` |
 
 Free ports: **4000** (oauth-ui), **8080** (Keycloak), **8081** (oauth-keycloak).
@@ -70,7 +71,8 @@ All commands run from the **repo root** (`learning-oauth/`) unless a `cd` is sho
 
 ```bash
 cd oauth-keycloak/keycloak
-docker compose up -d
+docker login registry.redhat.io      # first time only (Red Hat build of Keycloak image)
+docker compose up -d                 # no Red Hat account? KEYCLOAK_IMAGE=quay.io/keycloak/keycloak:26.8.0 docker compose up -d
 docker compose logs -f keycloak    # wait for "Listening on: http://0.0.0.0:8080", then Ctrl+C
 ```
 

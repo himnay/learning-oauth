@@ -2,9 +2,10 @@ name: learning-oauth
 
 services:
   keycloak:
-    # Official Keycloak image, published by Red Hat on its Quay registry (Quarkus based).
-    # Red Hat's supported build (RHBK) is registry.redhat.io/rhbk/keycloak-rhel9 and needs a Red Hat login.
-    image: quay.io/keycloak/keycloak:26.8.0
+    # Red Hat build of Keycloak (RHBK), RHEL 9 based. Needs: docker login registry.redhat.io
+    # No Red Hat login? Use the public upstream image instead:
+    #   KEYCLOAK_IMAGE=quay.io/keycloak/keycloak:26.8.0 docker compose up -d
+    image: ${KEYCLOAK_IMAGE:-registry.redhat.io/rhbk/keycloak-rhel9:26.6}
     container_name: learning-oauth-keycloak
     command: ["start-dev", "--import-realm"]
     environment:

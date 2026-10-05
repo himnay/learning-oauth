@@ -31,7 +31,7 @@ A hands-on project for learning **OAuth 2.0 Authorization Code flow with PKCE**,
 
 | Piece | Role in OAuth terms | Tech |
 |---|---|---|
-| **Keycloak** | Authorization server / OpenID Provider: logs users in, issues tokens | Docker Compose, `quay.io/keycloak/keycloak:26.8.0` (Red Hat) |
+| **Keycloak** | Authorization server / OpenID Provider: logs users in, issues tokens | Docker Compose, Red Hat build of Keycloak `registry.redhat.io/rhbk/keycloak-rhel9:26.6` |
 | **`oauth-ui`** | Client (backend-for-frontend) + the single page UI | Node.js, Express |
 | **`oauth-keycloak`** | Resource server: a REST API that only accepts valid Keycloak access tokens | Spring Boot 4.1, Spring Security 7 |
 
@@ -78,6 +78,7 @@ learning-oauth/
 | Tool | Version | Check |
 |---|---|---|
 | Docker + Docker Compose v2 | recent | `docker compose version` |
+| Red Hat registry login | for the RHBK image (or use the public image, see [Keycloak image](#keycloak-image-rhbk)) | `docker login registry.redhat.io` |
 | Java (JDK) | **27** (set by super-pom) | `java -version` |
 | Node.js | **22.9+** (uses `--env-file-if-exists`) | `node -v` |
 
@@ -91,8 +92,9 @@ Free ports: **8080** (Keycloak), **8081** (oauth-keycloak), **4000** (oauth-ui).
 Use three terminals, started in this order.
 
 ```bash
-# Terminal 1: Keycloak (first start pulls the image, ~30-60 s)
+# Terminal 1: Keycloak, Red Hat build (first start pulls the image, ~30-60 s)
 cd oauth-keycloak/keycloak
+docker login registry.redhat.io        # first time only; no Red Hat account? see "Keycloak image"
 docker compose up -d
 docker compose logs -f keycloak        # wait for "Listening on: http://0.0.0.0:8080", then Ctrl+C
 
@@ -176,26 +178,35 @@ The tokens live only in the Node server's session (the **backend-for-frontend** 
 
 The authorization server that the API trusts. It's started by Docker Compose and configured entirely from `realm-export.json`.
 
-#### Keycloak image: `quay.io/keycloak/keycloak`
+<a id="keycloak-image-rhbk"></a>
+#### Keycloak image: Red Hat build of Keycloak (RHBK)
 
-Keycloak is an open-source project led by **Red Hat**. Its official container image is published on Red Hat's **Quay.io** registry as **`quay.io/keycloak/keycloak`** (Quarkus based), and this project uses `quay.io/keycloak/keycloak:26.8.0`. It's public: no account or login needed.
+This project runs the **Red Hat build of Keycloak** (RHBK), `registry.redhat.io/rhbk/keycloak-rhel9:26.6` (Keycloak 26.6.x on RHEL 9, Quarkus based). It is the same Keycloak code as upstream, built, signed and supported by Red Hat. The `26.6` tag follows the latest 26.6 patch build.
 
 | Image | Who / what | Pull access | Use it for |
 |---|---|---|---|
-| `quay.io/keycloak/keycloak` | Upstream Keycloak, built and published by Red Hat | Public | Learning, development, community-supported production |
-| `registry.redhat.io/rhbk/keycloak-rhel9` | **Red Hat build of Keycloak (RHBK)**: same code, RHEL-based, with Red Hat support and long-term fixes | Red Hat account + `docker login registry.redhat.io` | Production with a Red Hat subscription |
+| `registry.redhat.io/rhbk/keycloak-rhel9` (**default here**) | Red Hat build of Keycloak: RHEL-based, Red Hat support and long-term fixes | Red Hat account + `docker login registry.redhat.io` | Production with a Red Hat subscription; this project |
+| `quay.io/keycloak/keycloak` | Upstream Keycloak, published by the Keycloak project on Quay.io | Public, no login | Learning without a Red Hat account; newest features first |
 
-Switching to RHBK only changes the `image:` line. Configuration (`start-dev`, `--import-realm`, `KC_*` variables) and URLs are the same:
+**One-time login** before the first `docker compose up` (Docker keeps its own registry login, separate from the Red Hat website):
 
-```yaml
-image: registry.redhat.io/rhbk/keycloak-rhel9:<version>   # after: docker login registry.redhat.io
+```bash
+docker login registry.redhat.io
+# username/password = Red Hat account, or a Registry Service Account
+# from https://access.redhat.com/terms-based-registry/ (needed if your account uses 2FA)
 ```
 
-Pick a tag that exists in Red Hat's catalog for your subscription. RHBK versions trail upstream.
+**No Red Hat account?** The compose file reads the image from `KEYCLOAK_IMAGE`, so you can use the public upstream image without changing any file. Configuration (`start-dev`, `--import-realm`, `KC_*` variables) and URLs are identical:
+
+```bash
+KEYCLOAK_IMAGE=quay.io/keycloak/keycloak:26.8.0 docker compose up -d
+```
+
+To see which RHBK builds exist: [Red Hat Ecosystem Catalog: search `rhbk/keycloak-rhel9`](https://catalog.redhat.com/software/containers/search?q=rhbk%2Fkeycloak-rhel9). RHBK versions trail upstream by a few minor releases.
 
 How this differs from the old WildFly-based `jboss/keycloak` image (retired at 16.1.1), in case you follow older tutorials:
 
-| Old tutorials (`jboss/keycloak`) | This project (`quay.io/keycloak/keycloak`) |
+| Old tutorials (`jboss/keycloak`) | This project (RHBK / `quay.io/keycloak/keycloak`) |
 |---|---|
 | URLs contain `/auth/`, e.g. `/auth/realms/x` | No `/auth/` prefix: `/realms/x` |
 | `KEYCLOAK_USER` / `KEYCLOAK_PASSWORD` | `KC_BOOTSTRAP_ADMIN_USERNAME` / `KC_BOOTSTRAP_ADMIN_PASSWORD` |
@@ -442,6 +453,8 @@ Example: `PORT=9090 ./mvnw -pl oauth-keycloak spring-boot:run` (then set `API_UR
 | API 401 on first call with `Unable to resolve the Configuration with the provided Issuer` | API can't reach Keycloak to load keys. Is Keycloak up on :8080? |
 | `OIDC discovery failed … (is Keycloak running?)` in Node | Keycloak not up yet: `docker compose ps`, `docker compose logs keycloak`. |
 | Keycloak page: **Invalid parameter: redirect_uri** | Node URL/port doesn't match `redirectUris` in the realm. |
+| `docker compose up`: `Please login to the Red Hat Registry` | Run `docker login registry.redhat.io`, or start with `KEYCLOAK_IMAGE=quay.io/keycloak/keycloak:26.8.0 docker compose up -d`. |
+| Red Hat website says `You are already authenticated as different user` | Browser still has another Red Hat SSO session: sign out, clear `redhat.com` cookies, or use a private window. |
 | Realm JSON changes not applied | Import skips existing realms: `docker compose down && docker compose up -d`. |
 | `EADDRINUSE` / port in use | Change `PORT` (and related URLs, see [Configuration](#configuration)). |
 | "No login in progress" after login | Node restarted mid-login (sessions are in memory). Start again. |
