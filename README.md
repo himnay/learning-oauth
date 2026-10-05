@@ -31,7 +31,7 @@ A hands-on project for learning **OAuth 2.0 Authorization Code flow with PKCE**,
 
 | Piece | Role in OAuth terms | Tech |
 |---|---|---|
-| **Keycloak** | Authorization server / OpenID Provider: logs users in, issues tokens | Docker Compose, `quay.io/keycloak/keycloak:26.0` |
+| **Keycloak** | Authorization server / OpenID Provider: logs users in, issues tokens | Docker Compose, `quay.io/keycloak/keycloak:26.8.0` (Red Hat) |
 | **`oauth-ui`** | Client (backend-for-frontend) + the single page UI | Node.js, Express |
 | **`oauth-keycloak`** | Resource server: a REST API that only accepts valid Keycloak access tokens | Spring Boot 4.1, Spring Security 7 |
 
@@ -176,16 +176,31 @@ The tokens live only in the Node server's session (the **backend-for-frontend** 
 
 The authorization server that the API trusts. It's started by Docker Compose and configured entirely from `realm-export.json`.
 
-#### Image choice: `jboss/keycloak` vs `quay.io/keycloak/keycloak`
+#### Keycloak image: `quay.io/keycloak/keycloak`
 
-The old **`jboss/keycloak`** image (WildFly/JBoss based) is **deprecated**. Its last release was 16.1.1 (2021) and it gets no security fixes. Its official successor is the Quarkus-based **`quay.io/keycloak/keycloak`**, used here.
+Keycloak is an open-source project led by **Red Hat**. Its official container image is published on Red Hat's **Quay.io** registry as **`quay.io/keycloak/keycloak`** (Quarkus based), and this project uses `quay.io/keycloak/keycloak:26.8.0`. It's public: no account or login needed.
 
-| Old (`jboss/keycloak`) | New (`quay.io/keycloak/keycloak`) |
+| Image | Who / what | Pull access | Use it for |
+|---|---|---|---|
+| `quay.io/keycloak/keycloak` | Upstream Keycloak, built and published by Red Hat | Public | Learning, development, community-supported production |
+| `registry.redhat.io/rhbk/keycloak-rhel9` | **Red Hat build of Keycloak (RHBK)**: same code, RHEL-based, with Red Hat support and long-term fixes | Red Hat account + `docker login registry.redhat.io` | Production with a Red Hat subscription |
+
+Switching to RHBK only changes the `image:` line. Configuration (`start-dev`, `--import-realm`, `KC_*` variables) and URLs are the same:
+
+```yaml
+image: registry.redhat.io/rhbk/keycloak-rhel9:<version>   # after: docker login registry.redhat.io
+```
+
+Pick a tag that exists in Red Hat's catalog for your subscription. RHBK versions trail upstream.
+
+How this differs from the old WildFly-based `jboss/keycloak` image (retired at 16.1.1), in case you follow older tutorials:
+
+| Old tutorials (`jboss/keycloak`) | This project (`quay.io/keycloak/keycloak`) |
 |---|---|
 | URLs contain `/auth/`, e.g. `/auth/realms/x` | No `/auth/` prefix: `/realms/x` |
 | `KEYCLOAK_USER` / `KEYCLOAK_PASSWORD` | `KC_BOOTSTRAP_ADMIN_USERNAME` / `KC_BOOTSTRAP_ADMIN_PASSWORD` |
 | `KEYCLOAK_IMPORT=/tmp/realm.json` | `--import-realm` + files in `/opt/keycloak/data/import/` |
-| JBoss CLI / standalone.xml | `KC_*` env vars or CLI flags |
+| WildFly CLI / `standalone.xml` | `KC_*` env vars or CLI flags |
 
 #### `docker-compose.yml`
 

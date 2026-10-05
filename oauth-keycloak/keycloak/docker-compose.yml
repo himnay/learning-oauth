@@ -2,9 +2,9 @@ name: learning-oauth
 
 services:
   keycloak:
-    # The legacy "jboss/keycloak" image (WildFly based) is deprecated and stopped at 16.1.1.
-    # quay.io/keycloak/keycloak is its official successor (Quarkus based).
-    image: quay.io/keycloak/keycloak:26.0
+    # Official Keycloak image, published by Red Hat on its Quay registry (Quarkus based).
+    # Red Hat's supported build (RHBK) is registry.redhat.io/rhbk/keycloak-rhel9 and needs a Red Hat login.
+    image: quay.io/keycloak/keycloak:26.8.0
     container_name: learning-oauth-keycloak
     command: ["start-dev", "--import-realm"]
     environment:
